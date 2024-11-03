@@ -8,9 +8,10 @@ import initAuthStrategies from "../auth/passport.config.js"
 
 const router = Router();
 const manager = new userManager();
+initAuthStrategies
 
 export const auth = (req, res, next) => {
-    if (req.session?.userData && req.session?.userData.admin) {
+    if (req.session?.passaport) {
         next();
     } else {
         res.status(401).send({ error: 'No autorizado', data: [] });
@@ -110,30 +111,15 @@ router.post('/register',passport.authenticate("register",{failedRedirect:"/faile
 });
 
 router.post('/login',passport.authenticate("login",{failureRedirect:"/failedLogin"}), async (req, res) => {
-    const { username, password } = req.body;
+    req.session.save(err => {
+        if (err) return res.status(500).send({ error: 'Error al almacenar datos de sesión', data: [] });
 
-    if (username != '' && password != '') {
-        const process = await manager.authenticate(username, password);
-        if (process) {
-            req.session.userData = { firstName: process.firstName, lastName: process.lastName, email: process.email, admin: true };
-
-            // Nos aseguramos que los datos de sesión se hayan guardado
-            req.session.save(err => {
-                if (err) return res.status(500).send({ error: 'Error al almacenar datos de sesión', data: [] });
-
-                // Podemos tanto retornar respuesta como es habitual, o redireccionar a otra plantilla
-                // res.status(200).send({ error: null, data: 'Usuario autenticado, sesión iniciada!' });
-                res.redirect('/views/profile');
-            });
-        } else {
-            res.status(401).send({ error: 'Usuario o clave no válidos', data: [] });
-        }
-    } else {
-        res.status(400).send({ error: 'Faltan campos: obligatorios username, password', data: [] });
-    }
+        res.send("logueado") //no me funciona el res.redirect a views/profile. a pesar de que la contraseña coincide 
+                            // y el login funciona, me aparece no autorizado para el redirect
+    });
 });
 router.get("/failedLogin",(req,res)=>{
-    res.render("login fallido")
+    res.send("login fallido")
 })
 
 router.get('/logout', (req, res) => {
@@ -148,6 +134,17 @@ router.get('/logout', (req, res) => {
 router.get('/private', auth, (req, res) => {
     res.status(200).send({ error: null, data: 'Este contenido solo es visible por usuarios autenticados' });
 });
+router.get("/github",passport.authenticate("githubLogin",{scope:["user:email"]}), (req,res)=>{})
+
+
+router.get("/githubcallback",passport.authenticate("githubLogin",{failureRedirect:"/views/login"}), (req,res)=>{
+    req.session.save(err => {
+        if (err) return res.status(500).send({ error: 'Error al almacenar datos de sesión', data: [] });
+
+        
+        res.send("funciono el coso de github")
+    });
+})
 
 
 export default router;

@@ -2,6 +2,8 @@ import passport from "passport"
 import local from "passport-local"
 import userManager from "../dao/users.manager.js";
 import { createHash,validateHash } from "../utils.js"
+import GithubStrategy from "passport-github2"
+import config from "../config.js";
 
 const manager = new userManager()
 const localStrategy = local.Strategy;
@@ -13,7 +15,9 @@ const initAuthStrategies = ()=>{
             try {
                 const foundUser = await manager.getOne({email:username})
                 if (foundUser && validateHash(password,foundUser.password)) {
-                    const {password,...filteredUser} = foundUser;
+                    
+                    const {password, ...filteredUser} = foundUser;
+                    
                     return done (null,filteredUser)
                 }
                 else{
@@ -47,6 +51,38 @@ const initAuthStrategies = ()=>{
             }
         }
 
+    ))
+    passport.use("githubLogin",new GithubStrategy(
+        {
+            clientID:config.githubClientId,
+            secretId:config.githubClientSecret,
+            callbackURL:config.githubCallbackURL
+        },
+        async(req,accesToken,refreshToken,profile,done,)=>{
+            try {
+                console.log(profile);
+                const email = profile._json.email 
+                if (email) {
+                    const foundUser = await manager.getOne({email:email})
+                    if (!foundUser) {
+                        const user ={
+                            email:email,
+                            firstname:profile._json.name,
+                            lastname:" ",
+                            password:"none",
+                            age:""
+                        }
+                        const process = await manager.add(user)
+                        return done(null,process)
+                    }
+                    else{
+                        return foundUser;
+                    }
+                }
+            } catch (error) {
+                return done(new Error ("faltan datos del login"),false)
+            }
+        }
     ))
 
     passport.serializeUser((user,done)=>{
