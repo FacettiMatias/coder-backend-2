@@ -15,6 +15,7 @@ import config from './config.js';
 import FileStore from 'session-file-store';
 import passport from 'passport';
 import initAuthStrategies from "./auth/passport.config.js"
+import cors from "cors"
 
 
 const app = express();
@@ -34,6 +35,7 @@ app.use(session({
     // ttl = time to live = vida de la sesión en segs
     store: MongoStore.create({ mongoUrl: config.MONGODB_URI, ttl: 60, mongoOptions: {}})
 }));
+app.use(cors({origin:"*"}))
 initAuthStrategies()
 app.use(passport.initialize())
 app.use(passport.session())

@@ -3,6 +3,9 @@ import { uploader } from '../uploader.js';
 import userManager from '../dao/users.manager.js';
 import passport from 'passport';
 import initAuthStrategies from "../auth/passport.config.js"
+import { validateToken, createToken } from "../utils.js";
+import config from '../config.js';
+
 
 
 
@@ -134,16 +137,42 @@ router.get('/logout', (req, res) => {
 router.get('/private', auth, (req, res) => {
     res.status(200).send({ error: null, data: 'Este contenido solo es visible por usuarios autenticados' });
 });
-router.get("/github",passport.authenticate("githubLogin",{scope:["user:email"]}), (req,res)=>{})
+router.get("/github",passport.authenticate("githubLogin",{scope:["user:email"]}), (req,res)=>{
+    console.log("paso por aca");
+})
 
 
 router.get("/githubcallback",passport.authenticate("githubLogin",{failureRedirect:"/views/login"}), (req,res)=>{
+    console.log("por aqui paso");
     req.session.save(err => {
         if (err) return res.status(500).send({ error: 'Error al almacenar datos de sesión', data: [] });
 
         
-        res.send("funciono el coso de github")
+        res.redirect("views/profile")
     });
+})
+router.post('/jwtlogin', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (username != '' && password != '') {
+        const process = await manager.authenticate(username, password);
+        if (process) {
+            const payload = { username: username, admin: true };
+            // Generamos un token válido por 1 hora, y se lo devolvemos al cliente en la respuesta
+            const token = createToken(payload, '10m');
+            const date = new Date()
+            res.cookie(`${config.appName}_cookie` ,token,{httpOnly:true , signed:true , maxAge:date.setDate(date.getDate() +1),secure:false})
+            res.status(200).send({ error: null, data: { autentication: 'ok via cookie'} });
+        } else {
+            res.status(401).send({ error: 'Usuario o clave no válidos', data: [] });
+        }
+    } else {
+        res.status(400).send({ error: 'Faltan campos: obligatorios username, password', data: [] });
+    }
+});
+router.get("/private2",validateToken, (req,res) =>{
+    res.status(200).send("el contenido es solo para usuarios autenticados")
+
 })
 
 

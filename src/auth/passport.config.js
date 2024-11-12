@@ -55,15 +55,16 @@ const initAuthStrategies = ()=>{
     passport.use("githubLogin",new GithubStrategy(
         {
             clientID:config.githubClientId,
-            secretId:config.githubClientSecret,
+            clientSecret:config.githubClientSecret,
             callbackURL:config.githubCallbackURL
         },
-        async(req,accesToken,refreshToken,profile,done,)=>{
+        async(req,accessToken,refreshToken,profile,done,)=>{
             try {
                 console.log(profile);
-                const email = profile._json.email 
+                const email = profile._json.email ||  null
+                console.log(email);
                 if (email) {
-                    const foundUser = await manager.getOne({email:email})
+                    const foundUser = await manager.getOne(email)
                     if (!foundUser) {
                         const user ={
                             email:email,
