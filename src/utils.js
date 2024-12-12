@@ -19,7 +19,13 @@ export const validateToken = (req,res,next) =>{
         
         req.user = payload;
         next();
+
     });
 
+}
+export const handlePolicies = (policies) =>{
+    const role = req.user.role
+    if(!policies.includes(role)) return res.status(403).send("usted no cuenta con la autorizacion")
+        next()
 }
 

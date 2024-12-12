@@ -12,7 +12,8 @@ const schema = new mongoose.Schema({
     age:{type: Number, required: true},
     password:{type: String, required:true},
     
-    email: { type: String, required: true, unique: true }
+    email: { type: String, required: true, unique: true },
+    role:{type: String,enum:["admin","premium","user"] , default:"user"}
 });
 
 const model = mongoose.model(collection, schema);
